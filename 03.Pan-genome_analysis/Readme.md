@@ -1,4 +1,4 @@
-# 3. Pan-genome analysis
+# Pan-genome analysis
 
 ## Pan-genome analysis overview:
 
