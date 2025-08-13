@@ -24,8 +24,8 @@ while(<LEN>){
 my %hs_gff; open(GFF,$fn_gff) or die $!;
 while(<GFF>){
 	chomp(); my @a=split();
-	my $up=get_max($a[2]-$ud,1);                         #########上下游2000
-	my $dw=get_min($a[3]+$ud,$hs_len{$a[0]});				#########上下游2000
+	my $up=get_max($a[2]-$ud,1);                         #########Upstream and downstream 2000
+	my $dw=get_min($a[3]+$ud,$hs_len{$a[0]});				#########Upstream and downstream 2000
 	$hs_gff{$a[1]}={'c'=>$a[0],'s'=>$a[2],'e'=>$a[3],'u'=>$up,'d'=>$dw};
 } close(GFF); print "$fn_gff file done\n";
 
@@ -75,14 +75,14 @@ for(my $m=$ini;$m<$ll;$m++){
 		my $e2=$hs_gff{$mk}{'d'};
 		my $e1=$hs_gff{$mk}{'e'}+$ud;
 		print OUT "$mk\t$s1\t$s2\t$s3\t$e3\t$e2\t$e1";
-		## 计算上游TEs在个窗口的密度
+		## Calculate the density of upstream TEs in a window
 		sl_wd($mk,0,$ud-1,$window,$window*$step,0);
-		## 计算基因区TEs在各窗口的密度
+		## Calculate the density of TEs in each window of the gene region.
 		my $st_g=ceil(($e3-$s3+1)/($ud/($window*$step)));
 		if($st_g*(($ud-$window)/$window/$step)>=$e3-$s3+1){$st_g-=1;}
 		my $wd_g=($e3-$s3+1)-$st_g*($ud-$window)/($window*$step);
 		sl_wd($mk,$ud,$e3-$s1,$wd_g,$st_g,5000);
-		## 计算下游TEs在各窗口的密度
+		## Calculate the density of downstream TEs in each window.
 		sl_wd($mk,$e3-$s1+1,$e1-$s1,$window,$window*$step,10000);
 		print OUT "\n";
 		$ln++; print "$ln gene done\n";
@@ -97,10 +97,10 @@ for(my $m=$ini;$m<$ll;$m++){
 sub sl_wd{
 	my ($id,$is,$ie,$wd,$st,$fg)=@_; my @a=@{$hs_gene{$id}};
 	print "$id,$is,$ie,$wd,$st\n";
-	for(my $i=$is;$i+$wd-1<$ie+$st;$i+=$st){  ###后面的边界值注意超过了gene的区域
+	for(my $i=$is;$i+$wd-1<$ie+$st;$i+=$st){  ###Note that the boundary value behind exceeds the gene region.
 		my $ine=$i+$wd-1; if($ine>$ie){$ine=$ie;}
 		# print "$i,$ine\t@a[$i..$ine]\n";
-		my $sum=sum(@a[$i..$ine]); ### 判读有-1了怎么处理
+		my $sum=sum(@a[$i..$ine]); ### How to deal with a reading of -1?
 		if(min(@a[$i..$ine])==-1){$sum=-1;print "Warning. there is a -1 in $i\n";}
 		my $wl=$ine-$i+1;
 		my $den=$sum/$wl;
@@ -127,3 +127,4 @@ sub get_max{
 	}
 	return $max;
 }
+
