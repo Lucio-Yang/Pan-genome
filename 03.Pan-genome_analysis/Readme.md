@@ -86,6 +86,10 @@ cafe5 -i gene_families_filter.txt -t tree.txt -p -k 2 -o k2p
 GO_enrichment based on the gene annotation by interproscan.
 
 ```text
+#1. indetifying domains and Go annotions by interproscan
+interproscan.sh -i protein.pep -b result/ -goterms -iprlookup -pa -dp -f tsv -cpu 128
+
+#2. GO enrichment
 python3 interproscan_GO_Ath.py
 ```
 
