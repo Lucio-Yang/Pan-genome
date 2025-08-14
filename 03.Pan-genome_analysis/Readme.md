@@ -18,7 +18,7 @@
 
 ### Pan-genome construct
 
-*dagchainer    ——**yangguang** shige*
+*dagchainer*
 
 ```text
 commonds
@@ -76,6 +76,7 @@ mcmctree mcmctree.ctl
 Analyzing the expansion and construction of gene families among each node of the evolutionary history.
 
 ```text
+orthofinder version 2.5.5
 orthofinder -f input_last -M msa -S diamond -t 96 -a 8 -I 1.5 -T iqtree -A mafft
 cafe5 -i gene_families_filter.txt -t tree.txt -p -k 2 -o k2p
 ```
@@ -106,7 +107,7 @@ bash NLR-pangenome.sh
 
 ### A and B subgenomes compare analysis
 
-*RBH    ——**yangguang** shige*
+*RBH*
 
 ```text
 commonds
