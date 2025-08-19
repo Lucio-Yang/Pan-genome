@@ -3,7 +3,7 @@
 ## Genome annotation
 ### Workflow
 <p align="center">
-<img src="./pics/genePredicationWorkFlow.png" width="900px" background-color="#ffffff" /></p>
+<img src="./pics/genePredicationWorkFlow.png" width="1200px" background-color="#ffffff" /></p>
 
 The annotation integrated evidence from RNA-seq, Iso-seq, homologous protein alignments, and ab initio gene prediction.
 
