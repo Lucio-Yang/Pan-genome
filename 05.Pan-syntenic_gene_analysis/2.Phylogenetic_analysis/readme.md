@@ -17,6 +17,7 @@ python 2run_iqtree.py
 python 3change_name.py
 
 #construct the specise tree
+#astral.5.7.8.jar is from https://github.com/smirarab/ASTRAL
 java -jar astral.5.7.8.jar --outgroup Hv -i all.reroot.tre -o species_tree.tree -t 3
 ```
 
