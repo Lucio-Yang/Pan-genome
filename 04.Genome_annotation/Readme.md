@@ -1,11 +1,13 @@
 # Gene Prediction Methods
 
-## Workflow
+## Genome annotation
+### Workflow
 <p align="center">
 <img src="./pics/genePredicationWorkFlow.png" width="900px" background-color="#ffffff" /></p>
 
 The annotation integrated evidence from RNA-seq, Iso-seq, homologous protein alignments, and ab initio gene prediction.
 
+### Annotation
 Stranded RNA-seq reads were aligned to softmasked genome using STAR and assembled using StringTie:
 ```
 STAR --runThreadN 64 --runMode genomeGenerate --genomeDir ./01_star_index/Kronos --genomeFastaFiles ../01.ref_genome/Kronos.softmask.fa --limitGenomeGenerateRAM 200000000000
@@ -44,7 +46,7 @@ isoseq collapse -j 64 --do-not-collapse-extra-5exons ./01_isoseq_prep/Kronos/Kro
 
 Transcript loci were predicted by GMAP (v2024-11-20).
 ```
-gmap_build -D ./02_gmap_index/Kronos -d Kronos -t $nt ../01.ref_genome/Kronos.softmask.fa
+gmap_build -D ./02_gmap_index/Kronos -d Kronos -t 64 ../01.ref_genome/Kronos.softmask.fa
 # gff
 gmapl \
         -D ./02_gmap_index/Kronos \
@@ -56,12 +58,12 @@ gmapl \
         > ./Kronos_isoseq_gmap.gff
 # psl
 gmapl \
-        -D $workdir/02_gmap_index/$genome_species \
-        -d $genome_species \
+        -D ../02_gmap_index/Kronos \
+        -d  Kronos\
         -L 10000000 \
         -f 1 \
         --nthreads 64 \
-        ../01_isoseq_prep/$genome_species/Kronos_collapse.fasta \
+        ../01_isoseq_prep/Kronos/Kronos_collapse.fasta \
         > ../03_gmap_mapping/Kronos/Kronos_isoseq_gmap.psl
 
 # Convert the output of GMAP to hints for AUGUSTUS
@@ -80,7 +82,7 @@ For coding-region prediction, transcript assemblies from RNA-seq and Iso-seq wer
         -o ./01_merge_and_transdecoder/Kronos_transcriptome_merge_evidence.gtf \
         ../03.iso_seq/03_gmap_mapping/Kronos/Kronos_isoseq_gmap.gff
 
-gtf_genome_to_cdna_fasta.pl Kronos_transcriptome_merge_evidence.gtf $genome > Kronos_transcriptome_merge_evidence.cds.fa
+gtf_genome_to_cdna_fasta.pl Kronos_transcriptome_merge_evidence.gtf ../01.ref_genome/Kronos.softmask.fa > Kronos_transcriptome_merge_evidence.cds.fa
 gtf_to_alignment_gff3.pl Kronos_transcriptome_merge_evidence.gtf > Kronos_transcriptome_merge_evidence.alignment.gff3
 TransDecoder.LongOrfs -t Kronos_transcriptome_merge_evidence.cds.fa
 TransDecoder.Predict -t Kronos_transcriptome_merge_evidence.cds.fa
@@ -203,8 +205,6 @@ augustus --species=Kronos Kronos_for_train.gb.test > secondtest.out
 
 
 
-
-
 # Preparation
 cat ../05.homo_evidence/03_miniprot_aln2hints/Kronos/Kronos_homology_combined_hints.gff \
        ../02.rna_seq/04_bam2hints/Kronos/Kronos_NGS.hints.gff \
@@ -245,7 +245,267 @@ All of the gene evidence from transcriptomics, protein alignments, and ab initio
 
 ```
 
+cd ./01.evm/Kronos/
+cp ../../weights.txt ./
+
+#1) Homology-based evidence
+ln -s -f ../../../05.homo_evidence/02_miniprot_mapping/Kronos/Kronos_miniport.combine.paf.gff .
+$SOFT/EVidenceModeler-v2.1.0/EvmUtils/misc/miniprot_GFF_2_EVM_GFF3.py Kronos_miniport.combine.paf.gff > Kronos_miniport.combine.paf.evm.gff
+$SOFT/EVidenceModeler-v2.1.0/EvmUtils/gff3_gene_prediction_file_validator.pl Kronos_miniport.combine.paf.evm.gff
+#2) Transcript-based evidence
+ln -s -f ../../../04.transcript_evidence/01_merge_and_transdecoder/Kronos/Kronos_transcriptome_merge_evidence.transdecoder.gff .
+#3) Ab initio-based evidence
+# GeneMark
+$SOFT/EVidenceModeler-v2.1.0/EvmUtils/misc/GeneMarkHMM_GTF_to_EVM_GFF3.pl \
+    ../../../06.ab_initio_evidence/02_genemark_ET/Kronos/genemark.gtf > Kronos_genemark.evm.gff
+# augustus
+$SOFT/EVidenceModeler-v2.1.0/EvmUtils/misc/augustus_GFF3_to_EVM_GFF3.pl \
+    ../../../06.ab_initio_evidence/04.augustusPredict.allhints/Kronos/Kronos_augustus.allhints.combine.gff \
+    > Kronos_augustus.allhints.combine.evm.gff
+cat Kronos_genemark.evm.gff Kronos_augustus.allhints.combine.evm.gff > Kronos_allpredict.allhints.evm.gff
+
+$SOFT/EVidenceModeler-v2.1.0/EVidenceModeler \
+        --sample_id Kronos \
+        --genome ../../../01.ref_genome/Kronos.softmask.fa \
+        --weights weights.txt  \
+        --gene_predictions Kronos_allpredict.allhints.evm.gff \
+        --protein_alignments  Kronos_miniport.combine.paf.evm.gff \
+                --transcript_alignments Kronos_transcriptome_merge_evidence.transdecoder.gff \
+        --exec_dir Kronos \
+        --segmentSize 5000000 --overlapSize 1000000 --CPU 64
+```
+The resulting annotations were refined through two rounds of PASA (v2.5.3).
+```
+cd ./01.pasa_clean/Kronos
+find ../../../01.ref_genome/Kronos.softmask -name "*.softmask.part_*.fa" -type f |sort -V > Kronos_chrom_fa.list
+sed -r -e 's@.*.softmask.part_(\w+).fa@\1@' Kronos_chrom_fa.list > Kronos_chrom.list
+while read -r chrom;
+do
+awk -F'\t' -v CHROM=$chrom '$1 == CHROM' ../../../04.transcript_evidence/01_merge_and_transdecoder/Kronos/Kronos_transcriptome_merge_evidence.transdecoder.gff > Kronos_transcriptome_merge_evidence.transdecoder.${chrom}.gff
+
+gffread Kronos_transcriptome_merge_evidence.transdecoder.${chrom}.gff -g ../../../01.ref_genome/Kronos.softmask/Kronos.softmask.part_${chrom}.fa -w Kronos_transcriptome_merge_evidence.transdecoder.spliced_transcript.${chrom}.fa
+
+/usr/bin/time /home/yangg/software/PASApipeline.v2.5.3/bin/seqclean Kronos_transcriptome_merge_evidence.transdecoder.spliced_transcript.${chrom}.fa -v /data/lfy/UniVec/UniVec
+echo "[INFO: $(date "+%F %T")]: Kronos_${chrom} finished."
+done < <(cat Kronos_chrom.list)
+
+
+
+
+
+
+cd ./02.pasa_align_asm/Kronos
+find ../../../01.ref_genome/Kronos.softmask -name "*.softmask.part_*.fa" -type f |sort -V > Kronos_chrom_fa.list
+sed -r -e 's@.*.softmask.part_(\w+).fa@\1@' Kronos_chrom_fa.list > Kronos_chrom.list
+while read -r chrom;
+do
+cp ../../pasa.alignAssembly.txt pasa.alignAssembly.${chrom}.txt
+sed -i -e "s@T2v2@Kronos/Kronos_${chrom}@" pasa.alignAssembly.${chrom}.txt
+/usr/bin/time /data/lfy/biosoft/PASApipeline/Launch_PASA_pipeline.pl \
+        -c pasa.alignAssembly.${chrom}.txt \
+    -C \
+        -r \
+    -R \
+    -g ../../../01.ref_genome/Kronos.softmask/Kronos.softmask.part_${chrom}.fa \
+    -t ../../../01.pasa_clean/Kronos/Kronos_transcriptome_merge_evidence.transdecoder.spliced_transcript.${chrom}.fa.clean \
+    -T \
+    -u ../../../01.pasa_clean/Kronos/Kronos_transcriptome_merge_evidence.transdecoder.spliced_transcript.${chrom}.fa \
+    --ALIGNERS blat,gmap,minimap2 \
+    --CPU 64
+echo "[INFO: $(date "+%F %T")]: Kronos_${chrom} finished."
+done < <(cat Kronos_chrom.list)
+
+
+
+
+cd ./03.pasa_annot_update.round1/Kronos
+find ../../../01.ref_genome/Kronos.softmask -name "*.softmask.part_*.fa" -type f |sort -V > Kronos_chrom_fa.list
+sed -r -e 's@.*.softmask.part_(\w+).fa@\1@' Kronos_chrom_fa.list > Kronos_chrom.list
+/PASApipeline/misc_utilities/pasa_gff3_validator.pl ../../../07.evm/01.evm/Kronos/Kronos.EVM.gff3
+
+while read -r chrom;
+do
+# Preparation
+cp ../../pasa.alignAssembly.txt pasa.alignAssembly.${chrom}.txt
+sed -i -e "s@T2v2@Kronos/Kronos_${chrom}@" pasa.alignAssembly.${chrom}.txt
+cp ../../pasa.annotationCompare.txt pasa.annotationCompare.${chrom}.txt
+sed -i -e "s@T2v2@Kronos/Kronos_${chrom}@" pasa.annotationCompare.${chrom}.txt
+ln -s -f ../../../01.ref_genome/Kronos.softmask/Kronos.softmask.part_${chrom}.fa .
+awk -F'\t' -v chrom=$chrom '$1==chrom' /work/songbaoxing/yangg/chenb/07.evm/01.evm/Kronos/Kronos.EVM.gff3 > Kronos.EVM.${chrom}.gff3
+
+# Run PASA
+$SOFT/PASApipeline/scripts/Load_Current_Gene_Annotations.dbi \
+        -c pasa.alignAssembly.${chrom}.txt \
+        -g Kronos.softmask.part_${chrom}.fa \
+        -P Kronos.EVM.${chrom}.gff3
+$SOFT/PASApipeline/Launch_PASA_pipeline.pl \
+        -c pasa.annotationCompare.${chrom}.txt \
+        -A \
+        -g Kronos.softmask.part_${chrom}.fa \
+        -t ../../01.pasa_clean/Kronos/Kronos_transcriptome_merge_evidence.transdecoder.spliced_transcript.${chrom}.fa.clean \
+        --CPU $((nt))
+echo "[INFO: $(date "+%F %T")]: Kronos_${chrom} finished."
+done < <(cat Kronos_chrom.list)
+
+
+
+
+
+
+cd ./03.pasa_annot_update.round2/Kronos
+find ../../../01.ref_genome/Kronos.softmask -name "*.softmask.part_*.fa" -type f |sort -V > Kronos_chrom_fa.list
+sed -r -e 's@.*.softmask.part_(\w+).fa@\1@' Kronos_chrom_fa.list > Kronos_chrom.list
+
+while read -r chrom;
+do
+#Setup
+# Preparation
+cp ../../pasa.alignAssembly.txt pasa.alignAssembly.${chrom}.txt
+sed -i -e "s@T2v2@Kronos/Kronos_${chrom}@" pasa.alignAssembly.${chrom}.txt
+cp ../../pasa.annotationCompare.txt pasa.annotationCompare.${chrom}.txt
+sed -i -e "s@T2v2@Kronos/Kronos_${chrom}@" pasa.annotationCompare.${chrom}.txt
+ln -s -f ../../../01.ref_genome/Kronos.softmask/Kronos.softmask.part_${chrom}.fa .
+
+# Run PASA
+$SOFT/PASApipeline/scripts/Load_Current_Gene_Annotations.dbi \
+        -c pasa.alignAssembly.${chrom}.txt \
+        -g Kronos.softmask.part_${chrom}.fa \
+        -P ../../03.pasa_annot_update.round1/Kronos/Kronos_${chrom}.gene_structures_post_PASA_updates.gff3
+$SOFT/PASApipeline/Launch_PASA_pipeline.pl \
+        -c pasa.annotationCompare.${chrom}.txt \
+        -A \
+        -g Kronos.softmask.part_${chrom}.fa \
+        -t ../../01.pasa_clean/Kronos/Kronos_transcriptome_merge_evidence.transdecoder.spliced_transcript.${chrom}.fa.clean \
+        --CPU 64
+done < <(cat Kronos_chrom.list)
+
+
 ```
 
-The resulting annotations were refined through two rounds of PASA (v2.5.3).
-Gene models were classified as high confidence (HC) or low confidence (LC) genes according to criteria used by the IWGSC (https://urgi.versailles.inra.fr/download/iwgsc/IWGSC_RefSeq_Annotations/v1.0/iwgsc_refseqv1.0_README.pdf) and Liu et al.48. DIAMOND (v2.1.8) was used to compare predicted protein sequences against three curated datasets: UniMag (38,182 reviewed Magnoliopsida proteins, downloaded from Uniprot (SwissProt), June 2025), UniPoa (2,848,452 Poaceae proteins downloaded from Uniprot (SwissProt and trEMBL), June 2025), and PTREP (https://trep-db.uzh.ch/index.php, Rel-19, June 2025). Protein-encoding gene models were considered complete when start and stop codons were present. A HC protein sequence is complete with a hit in the UniMag database (HC1), or with hits in UniPoa and not in TREP (HC2). An LC protein sequence is incomplete and has a hit in the UniMag (LC1) or complete gene models with no hits to any of the three databases (LC2) or incomplete gene models with hits in Poaceae protein but no hits in the TE database TREP (LC3) or incomplete gene models with no hits to any of the three databases (LC4). TREP genes have no hits to UniMag proteins but with hits to TREP entries. We also promoted gene models with intron chains supported by Iso-Seq to HC (HC3)48. InterProScan (version 5.73) was used to predict potential protein domains and perform GO annotations for HC genes of each accession with the parameters “-goterms -iprlookup -pa -dp”75.
+## Classifying annotations
+Gene models were classified as high confidence (HC) or low confidence (LC) genes according to criteria used by the IWGSC (https://urgi.versailles.inra.fr/download/iwgsc/IWGSC_RefSeq_Annotations/v1.0/iwgsc_refseqv1.0_README.pdf) and Liu et al.48. 
+
+DIAMOND (v2.1.8) was used to compare predicted protein sequences against three curated datasets: UniMag (38,182 reviewed Magnoliopsida proteins, downloaded from Uniprot (SwissProt), June 2025), UniPoa (2,848,452 Poaceae proteins downloaded from Uniprot (SwissProt and trEMBL), June 2025), and PTREP (https://trep-db.uzh.ch/index.php, Rel-19, June 2025). Protein-encoding gene models were considered complete when start and stop codons were present. A HC protein sequence is complete with a hit in the UniMag database (HC1), or with hits in UniPoa and not in TREP (HC2). An LC protein sequence is incomplete and has a hit in the UniMag (LC1) or complete gene models with no hits to any of the three databases (LC2) or incomplete gene models with hits in Poaceae protein but no hits in the TE database TREP (LC3) or incomplete gene models with no hits to any of the three databases (LC4). TREP genes have no hits to UniMag proteins but with hits to TREP entries. We also promoted gene models with intron chains supported by Iso-Seq to HC (HC3)48. InterProScan (version 5.73) was used to predict potential protein domains and perform GO annotations for HC genes of each accession with the parameters “-goterms -iprlookup -pa -dp”75.
+```
+mkdir 01.Kronos.diamond_Kronos
+gffread ../06_rename/final.Kronos.gff3 -g ../../01.ref_genome/Kronos.softmask.fa -y Kronos_v1.pep -x Kronos.cds
+
+cat ./Kronos_v1.pep | sed -E '~s/\.$//g' | sed -E '~s/([A-Z])\.([A-Z])/\1*\2/g' > Kronos.pep
+
+diamond blastp -q ./Kronos.pep -d ../00_homo_database/te.dmnd --threads 128 --outfmt 6 qseqid sseqid length qlen qstart qend slen sstart send pident gapopen mismatch evalue bitscore --sensitive -e 1e
+-5 -o ./01.Kronos.diamond_Kronos/t2_to_te.blast
+diamond blastp -q ./Kronos.pep -d ../00_homo_database/buscopoales.dmnd --threads 128 --outfmt 6 qseqid sseqid length qlen qstart qend slen sstart send pident gapopen mismatch evalue bitscore --sensit
+ive -e 1e-5 -o ./01.Kronos.diamond_Kronos/t2_to_buscopoales.blast
+diamond blastp -q ./Kronos.pep -d ../00_homo_database/unimag.dmnd --threads 128 --outfmt 6 qseqid sseqid length qlen qstart qend slen sstart send pident gapopen mismatch evalue bitscore --sensitive -
+e 1e-10 -o ./01.Kronos.diamond_Kronos/t2_to_unimag.blast
+diamond blastp -q ./Kronos.pep -d ../00_homo_database/unipoa.dmnd --threads 128 --outfmt 6 qseqid sseqid length qlen qstart qend slen sstart send pident gapopen mismatch evalue bitscore --sensitive -
+e 1e-10 -o ./01.Kronos.diamond_Kronos/t2_to_unipoa.blast
+
+perl ../checkAnnotationCompleteness.pl ./Kronos.cds | sort | uniq > 01.Kronos.diamond_Kronos/ConservedFunction.list
+
+cat ./01.Kronos.diamond_Kronos/t2_to_unimag.blast | gawk '{if(($3/$4>=0.9 && $7/$4>=0.9)&&$13<=1e-10)print $1}' | sort | uniq > 01.Kronos.diamond_Kronos/high_confidence_P1.hits1
+cat ./01.Kronos.diamond_Kronos/t2_to_buscopoales.blast | gawk '{if(($3/$4>=0.7)&&$13<=1e-5)print $1}' | sort | uniq >> 01.Kronos.diamond_Kronos/high_confidence_P1.hits1
+cat 01.Kronos.diamond_Kronos/high_confidence_P1.hits1 | sort | uniq > 01.Kronos.diamond_Kronos/high_confidence_P1.hits
+cat ./01.Kronos.diamond_Kronos/ConservedFunction.list 01.Kronos.diamond_Kronos/high_confidence_P1.hits | sort | uniq -c | awk '$1 == 2 {print $2}' > 01.Kronos.diamond_Kronos/high_confidence_1.hits
+
+
+cat ./01.Kronos.diamond_Kronos/t2_to_te.blast | gawk '{if(($3/$4>=0.70 || $7/$4>=0.70)&&$13<=1e-10)print $1}' | sort | uniq > 01.Kronos.diamond_Kronos/TE_high_confidence.hits
+cat ./01.Kronos.diamond_Kronos/t2_to_unipoa.blast | gawk '{if(($3/$4>=0.9 && $7/$4>=0.9)&&$13<=1e-10&&$10>=80)print $1}' | sort | uniq > 01.Kronos.diamond_Kronos/high_confidence_unipoa.hits
+wc -l 01.Kronos.diamond_Kronos/high_confidence_unipoa.hits #93154
+
+
+cat ./01.Kronos.diamond_Kronos/ConservedFunction.list ./01.Kronos.diamond_Kronos/high_confidence_unipoa.hits | sort | uniq -c | awk '$1 == 2 {print $2}' > 01.Kronos.diamond_Kronos/high_confidence_unipoa_and_ConservedFunction.list
+cat 01.Kronos.diamond_Kronos/high_confidence_unipoa_and_ConservedFunction.list 01.Kronos.diamond_Kronos/TE_high_confidence.hits | sort | uniq -c | awk '$1 == 2 {print $2}' > 01.Kronos.diamond_Kronos/high_confidence_unipoa_and_ConservedFunction_and_te.list
+cat 01.Kronos.diamond_Kronos/high_confidence_unipoa_and_ConservedFunction_and_te.list 01.Kronos.diamond_Kronos/high_confidence_unipoa_and_ConservedFunction.list | sort | uniq -c | awk '$1 == 1 {print $2}' > ./01.Kronos.diamond_Kronos/high_confidence_2.hits
+cat 01.Kronos.diamond_Kronos/high_confidence_1.hits ./01.Kronos.diamond_Kronos/high_confidence_2.hits | sort | uniq > ./01.Kronos.diamond_Kronos/t2.final.HC.id
+
+wc -l ./01.Kronos.diamond_Kronos/t2.final.HC.id  # 100239
+cat ./01.Kronos.diamond_Kronos/t2.final.HC.id | sed -E '~s/.mRNA[0-9]+//g' | sort | uniq | wc -l #83839
+
+
+python3 ../summarizeGffFile/extractByTranscriptIds.py -f ../06_rename/final.Kronos.gff3 -t ./01.Kronos.diamond_Kronos/Kronos.final.HC.id > Kronos.HC.gff3
+gffread Kronos.HC.gff3 -g ../../01.ref_genome/Kronos.softmask.fa -y Kronos.HC.pep
+ulimit -u 5000000 -s 81920
+busco -i Kronos.HC.pep -m prot -l /data/lfy/busco_od10/poales_odb10 --cpu 100 -f -o BUSCO_t2 -e 1e-05 --offline   #98.8%
+
+
+
+
+# incomplete and has a hit in the UniMag
+cat ./01.Kronos.diamond_Kronos/high_confidence_P1.hits ./01.Kronos.diamond_Kronos/ConservedFunction.list > ./01.Kronos.diamond_Kronos/high_confidence_P1_ConservedFunction.list
+cat ./01.Kronos.diamond_Kronos/ConservedFunction.list ./01.Kronos.diamond_Kronos/high_confidence_P1_ConservedFunction.list | sort | uniq -c | awk '$1 == 1 {print $2}' > 01.Kronos.diamond_Kronos/low_confidence_1.hits
+wc -l 01.Kronos.diamond_Kronos/low_confidence_1.hits # 34
+
+
+# complete gene models with no hits to any of the three databases
+cat 01.Kronos.diamond_Kronos/high_confidence_P1.hits 01.Kronos.diamond_Kronos/TE_high_confidence.hits 01.Kronos.diamond_Kronos/high_confidence_unipoa.hits | sort | uniq > 01.Kronos.diamond_Kronos/hit_with_anything.hits
+cat ./01.Kronos.diamond_Kronos/ConservedFunction.list 01.Kronos.diamond_Kronos/hit_with_anything.hits | sort | uniq > 01.Kronos.diamond_t2/hit_with_anything_ConservedFunction.hits
+cat ./01.Kronos.diamond_Kronos/hit_with_anything.hits 01.Kronos.diamond_Kronos/hit_with_anything_ConservedFunction.hits | sort | uniq -c | awk '$1 == 1 {print $2}'  > 01.Kronos.diamond_Kronos/low_confidence_2.hits
+wc -l 01.Kronos.diamond_Kronos/low_confidence_2.hits # 62062
+
+
+# incomplete gene models with hits in poaceae protein but no hits in the TE database TREP
+cat 01.Kronos.diamond_Kronos/high_confidence_unipoa.hits 01.Kronos.diamond_Kronos/high_confidence_P1.hits | sort | uniq > 01.Kronos.diamond_Kronos/hit_anyannotation.hits
+cat 01.Kronos.diamond_Kronos/hit_anyannotation.hits ./01.Kronos.diamond_Kronos/ConservedFunction.list | sort | uniq > ./01.Kronos.diamond_Kronos/hit_anyannotation_ConservedFunction.list
+cat 01.Kronos.diamond_Kronos/ConservedFunction.list ./01.Kronos.diamond_Kronos/hit_anyannotation_ConservedFunction.list  | sort | uniq -c | awk '$1 == 1 {print $2}'  > ./01.Kronos.diamond_Kronos/hit_anyannotation_incomplete.list
+cat 01.Kronos.diamond_Kronos/TE_high_confidence.hits ./01.Kronos.diamond_Kronos/hit_anyannotation_incomplete.list  | sort | uniq > 01.Kronos.diamond_Kronos/hit_anyannotation_incomplete_TE.list
+cat 01.Kronos.diamond_Kronos/TE_high_confidence.hits 01.Kronos.diamond_Kronos/hit_anyannotation_incomplete_TE.list | sort | uniq  -c | awk '$1 == 1 {print $2}' > 01.Kronos.diamond_Kronos/low_confidence_3.hits   #01.Kronos.diamond_Kronos/hit_anyannotation_incomplete_not_TE.list
+wc -l 01.Kronos.diamond_Kronos/low_confidence_3.hits  #84
+
+
+
+# incomplete gene models with no hits to any of the three databases
+grep ">" Kronos_v1.pep | sed '~s/>//g'  | awk '{print $1}' > 01.Kronos.diamond_Kronos/full.pep.list
+cat ./01.Kronos.diamond_Kronos/ConservedFunction.list 01.Kronos.diamond_Kronos/full.pep.list | sort | uniq -c | awk '$1 == 1 {print $2}'  > 01.Kronos.diamond_Kronos/UnConservedFunction.hits
+cat ./01.Kronos.diamond_Kronos/UnConservedFunction.hits 01.Kronos.diamond_Kronos/hit_with_anything.hits | sort | uniq > 01.Kronos.diamond_Kronos/hit_with_anything_UnConservedFunction.hits
+cat ./01.Kronos.diamond_Kronos/hit_with_anything.hits 01.Kronos.diamond_Kronos/hit_with_anything_UnConservedFunction.hits | sort | uniq -c | awk '$1 == 1 {print $2}'  > 01.Kronos.diamond_Kronos/low_confidence_4.hits
+wc -l 01.Kronos.diamond_Kronos/low_confidence_4.hits # 801
+
+
+cat 01.Kronos.diamond_Kronos/low_confidence_1.hits 01.Kronos.diamond_Kronos/low_confidence_2.hits  01.Kronos.diamond_Kronos/low_confidence_3.hits 01.Kronos.diamond_Kronos/low_confidence_4.hits | sort | uniq >  01.Kronos.diamond_Kronos/low_confidence.hits
+wc -l 01.Kronos.diamond_Kronos/low_confidence.hits #62948
+
+cat 01.Kronos.diamond_Kronos/low_confidence.hits | sed -E '~s/.mRNA[0-9]+//g' | sort | uniq > 01.Kronos.diamond_Kronos/low_confidence_gene.list
+cat ./01.Kronos.diamond_Kronos/t2.final.HC.id | sed -E '~s/.mRNA[0-9]+//g' | sort | uniq > 01.Kronos.diamond_Kronos/high_confidence_gene.list
+
+cat 01.Kronos.diamond_Kronos/low_confidence_gene.list 01.Kronos.diamond_Kronos/high_confidence_gene.list | sort | uniq > 01.Kronos.diamond_Kronos/high_low_confidence_gene.list
+cat 01.Kronos.diamond_Kronos/high_low_confidence_gene.list 01.Kronos.diamond_Kronos/high_confidence_gene.list | sort | uniq -c | awk '$1 == 1 {print $2}' > 01.Kronos.diamond_Kronos/final_low_confidence_gene.list
+
+
+python3 ../02updatewithTransdecoderResults/summarizeGffFile/extractByGeneIds.py -f ../06_rename/final.Kronos.gff3 -g ./01.Kronos.diamond_Kronos/final_lo
+w_confidence_gene.list > Kronos.LC.gff3
+
+
+
+
+
+
+cat 01.Kronos.diamond_Kronos/TE_high_confidence.hits 01.Kronos.diamond_Kronos/high_confidence_P1.hits | sort | uniq > 01.Kronos.diamond_Kronos/TE_high_confidence_high_confidence_P1.hits
+cat 01.Kronos.diamond_Kronos/TE_high_confidence_high_confidence_P1.hits 01.Kronos.diamond_Kronos/high_confidence_P1.hits | sort | uniq -c | awk '$1 == 1 {print $2}' > 01.Kronos.diamond_Kronos/TE.list
+wc -l 01.Kronos.diamond_Kronos/TE.list #13052
+
+cat 01.Kronos.diamond_Kronos/TE.list  | sed -E '~s/.mRNA[0-9]+//g' | sort | uniq > 01.Kronos.diamond_Kronos/TE.gene.list
+cat 01.Kronos.diamond_Kronos/TE.gene.list 01.Kronos.diamond_Kronos/high_low_confidence_gene.list | sort | uniq > 01.Kronos.diamond_Kronos/high_low_confidence_TE_gene.list
+
+cat 01.Kronos.diamond_Kronos/high_low_confidence_TE_gene.list 01.Kronos.diamond_Kronos/high_low_confidence_gene.list | sort | uniq -c | awk '$1 == 1 {print $2}' > 01.Kronos.diamond_Kronos/final_TE.gene.list
+
+python3 ../02updatewithTransdecoderResults/summarizeGffFile/extractByGeneIds.py -f ../06_rename/final.Kronos.gff3 -g 01.Kronos.diamond_Kronos/final_TE.g
+ene.list > Kronos.TE.gff3
+
+wc -l 01.Kronos.diamond_Kronos/final_TE.gene.list
+# 12936
+
+wc -l 01.Kronos.diamond_Kronos/final_low_confidence_gene.list
+# 60440
+wc -l 01.Kronos.diamond_Kronos/high_confidence_gene.list
+# 83839
+
+
+#12936+60440+83839
+#[1] 157215
+
+grep ">" Kronos.pep | awk '{print $2}' | sort | uniq | wc -l
+# 157215
+
+cat 01.Kronos.diamond_Kronos/TE.list ./01.Kronos.diamond_Kronos/t2.final.HC.id 01.Kronos.diamond_Kronos/low_confidence.hits | sort | uniq -c | awk '$1 == 2 {print $0}' | head
+```
