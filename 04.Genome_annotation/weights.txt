@@ -1,0 +1,4 @@
+TRANSCRIPT	transdecoder	10
+PROTEIN	miniprot	8
+ABINITIO_PREDICTION	Augustus	5
+ABINITIO_PREDICTION	GeneMark.hmm	2
