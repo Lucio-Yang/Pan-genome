@@ -2,7 +2,7 @@
 
 ## Pan-syntenic gene analysis overview:
 
-1. Pan-genome analysis
+1. Pan_syntenic_genes
    1. pan-genome construct
    2. Ka/Ks analysis
    3. TE density analysis
