@@ -1,6 +1,4 @@
-# Pan-syntenic gene analysis
-
-## Pan-syntenic gene analysis overview:
+# Pan-syntenic gene analysis overview:
 
 1. Pan-syntenic genes
    1. pan-genome construct
