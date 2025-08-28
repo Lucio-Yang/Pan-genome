@@ -1,8 +1,12 @@
-### A and B subgenomes compare analysis
+## Identifying homologoues between A and B genomes
 
-*RBH*
+**Running GeneTribe software for each sample**
 
-```text
-commonds
-genetribe 
+```
+cat sample.list | while read f
+do
+	mkdir -p ${f}; cd ${f}
+	genetribe core -l ${f}_A -f ${f}_B -n 128
+	cd ../
+done
 ```
