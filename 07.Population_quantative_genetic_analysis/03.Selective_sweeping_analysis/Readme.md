@@ -1,7 +1,7 @@
-## Identification of domestication and improvement region for tetraploid wheat<br>
+##Identification of domestication and improvement region for tetraploid wheat<br>
 For selective analysis, we identified the selective signature based on SNP&InDel using Fst, π(Nucleotide diversity) and XPCLR value. And also, we calculated the SV frequency between three subpopulations (WEW, Wild emmer wheat; DTW, domesticated tetraploid wheat; FTW, free-threshing tetraploid wheat) to identift the selective SVs.
 
-** <em>F</em>st analysis**
+**<em>F</em>st analysis**
 ```
 ########### Fst for pairs of each subspecies
 #!/usr/bin/bash
@@ -33,7 +33,7 @@ awk '$1 == '''$i''' {print $0}' fst_DTW_FTW.windowed.weir.fst > fst_DTW_FTW.fst.
 done
 
 ```
-** Nucleotide diversity analysis**
+**Nucleotide diversity analysis**
 ```
 ########### Nucleotide diversity for each subspecies
 vcf=TW.sample742.filtered.snp-indel.nochr.miss0.8.maf0.05.bg.header.sorted.vcf.gz
@@ -72,7 +72,7 @@ awk '$1 == '''$i''' {print$0}' piratio_DTW_FTW.txt > piratio_DTW_FTW.chr${i}
 done
 
 ```
-** XPCLR analysis**
+**XPCLR analysis**
 ```
 pop1=pop_WEW.list
 pop2=pop_DTW.list
@@ -151,7 +151,7 @@ bedtools merge -i improve_genwin.top0.05.sorted.bed > improve_genwin.top0.05.sor
 
 ```
 
-** Identification of selective SVs based on Fisher's exact test**
+**Identification of selective SVs based on Fisher's exact test**
 ```
 bcftools view -S pop_WEW.list TWGG_sample742_SV.vcf.gz --threads 50 -Oz > TWGG_sample742_SV.WEW.vcf.gz
 bcftools view -S pop_FTW.list TWGG_sample742_SV.vcf.gz --threads 50 -Oz > TWGG_sample742_SV.FTW.vcf.gz
