@@ -1,4 +1,4 @@
-##Identification of domestication and improvement region for tetraploid wheat<br>
+## Identification of domestication and improvement region for tetraploid wheat<br>
 For selective analysis, we identified the selective signature based on SNP&InDel using Fst, π(Nucleotide diversity) and XPCLR value. And also, we calculated the SV frequency between three subpopulations (WEW, Wild emmer wheat; DTW, domesticated tetraploid wheat; FTW, free-threshing tetraploid wheat) to identift the selective SVs.
 
 **<em>F</em>st analysis**
