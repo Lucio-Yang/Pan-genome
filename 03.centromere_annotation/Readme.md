@@ -38,7 +38,7 @@ macs3 callpeak -f BAMPE -c ${genome}_input.filtered.bam -t ${genome}.CENH3.filte
 done
 ```
 
-**Step4 Merging and identification potential centromere region**
+**Step4 Merging and identification potential centromere region**<br>
 We merged all peaks of each accession based on the 1 Mb distance. The genome region with the highest number of peaks was considered a potential centromere region.
 
 ```
@@ -53,7 +53,7 @@ done
 
 ```
 
-**Step5 Extracting sequence of each centromere region**
+**Step5 Extracting sequence of each centromere region**<br>
 The file 'all_centromere_region.txt' is obtained by merging the bed files of all genomic centromeres.
 ```
 sed -n '2,$p' all_centromere_region.txt | while read f
