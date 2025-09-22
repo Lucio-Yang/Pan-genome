@@ -1,5 +1,5 @@
-## Population structure analyis
-** Preparing for input files**
+##Population structure analyis
+**Preparing for input files**
 ```
 #!/bin/bash
 #SBATCH -o job.run.%j.out
