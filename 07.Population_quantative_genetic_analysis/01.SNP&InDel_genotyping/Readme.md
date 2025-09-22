@@ -1,5 +1,5 @@
-## WGS mapping
-** Mapping the WGS data of each accession to Kronos reference**
+## WGS mapping<br>
+**Mapping the WGS data of each accession to Kronos reference**
 ```
 ref=kronos.final.split.fa
 

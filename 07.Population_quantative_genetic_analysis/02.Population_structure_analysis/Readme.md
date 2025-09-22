@@ -1,4 +1,4 @@
-##Population structure analyis
+##Population structure analyis<br>
 **Preparing for input files**
 ```
 #!/bin/bash
