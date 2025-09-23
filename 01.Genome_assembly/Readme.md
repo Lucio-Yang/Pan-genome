@@ -49,64 +49,64 @@ samtools fastq -@ 128 ont.bam > ont.fq
 NanoFilt -q 10 --length 100000 ./ont.fq | gzip > ont.100.fq.gz  
 NanoStat -t 128 --fastq ./ont.100.fq.gz    -n 100.report  --outdir report  
 
-#hifiasm HIFI data
-hifiasm -o kronos_l0 -t 96 -l 0 --primary Kronos.all.hifi.fq.gz > asm.all.out 2> asm.all.err
+#hifiasm HIFI data  
+hifiasm -o kronos_l0 -t 96 -l 0 --primary Kronos.all.hifi.fq.gz > asm.all.out 2> asm.all.err  
 
-#hifiasm: HIFI and ONT data assembly
-hifiasm -o kronos_l0 -t 128 -l 0 --telo-m CCCTAAA --primary Kronos.all.hifi.fq.gz  --ul Kronos.all.100.ont.fq.gz > asm.all.out 2> asm.all.err
+#hifiasm: HIFI and ONT data assembly  
+hifiasm -o kronos_l0 -t 128 -l 0 --telo-m CCCTAAA --primary Kronos.all.hifi.fq.gz  --ul Kronos.all.100.ont.fq.gz > asm.all.out 2> asm.all.err  
 
-#verkko: HIFI and ONT data assembly
+#verkko: HIFI and ONT data assembly  
 verkko -d ./verkko_out --hifi Kronos.all.hifi.fq.gz  --no-correction --nano  Kronos.all.100.ont.fq.gz --threads 128 --local --local-memory 900 --local-cpus 1
-28 2> verkko.log
+28 2> verkko.log  
 
-#hifiasm: ONT data assembly
-hifiasm -t 128 -k 63 --ont -o ONT.asm Kronos.all.100.ont.fq.gz > asm.all.out 2> asm.all.err
+#hifiasm: ONT data assembly  
+hifiasm -t 128 -k 63 --ont -o ONT.asm Kronos.all.100.ont.fq.gz > asm.all.out 2> asm.all.err  
 
-#nextdenovo: ONT data assembly
-#Given the substantial size of the genome, we employed a Assembly by chromosome  strategy, using chromosome 1A as an example.
-minimap2 -t 52  -ax map-ont kronos.fa  Kronos.all.100.ont.fq.gz -o Map.result.sam
-awk '$1~/^@/'  Map.result.sam > header
-awk '$1~!/^@/' Map.result.sam > noMap.result.sam
-sort -t $'\t' -Vk3 --parallel=128 -o noMap.result.sam.sort noMap.result.sam
-cat header noMap.result.sam.sort > Map.result.sam.sort
-samtools faidx kronos.fa
-samtools view -@ 128 -bt kronos.fa.fai  Map.result.sam.sort > Map.result.sam.sort.bam
+#nextdenovo: ONT data assembly  
+#Given the substantial size of the genome, we employed a Assembly by chromosome  strategy, using chromosome 1A as an example.  
+minimap2 -t 52  -ax map-ont kronos.fa  Kronos.all.100.ont.fq.gz -o Map.result.sam  
+awk '$1~/^@/'  Map.result.sam > header  
+awk '$1~!/^@/' Map.result.sam > noMap.result.sam  
+sort -t $'\t' -Vk3 --parallel=128 -o noMap.result.sam.sort noMap.result.sam  
+cat header noMap.result.sam.sort > Map.result.sam.sort  
+samtools faidx kronos.fa  
+samtools view -@ 128 -bt kronos.fa.fai  Map.result.sam.sort > Map.result.sam.sort.bam  
 
-samtools index -c Map.result.sam.sort.bam
+samtools index -c Map.result.sam.sort.bam  
 
-samtools view -@ 128 -h Map.result.sam.sort.bam 1A   > 1a.sam
-samtools view -@ 128 -bS 1a.sam | samtools sort - -o 1a.bam
-samtools bam2fq 1a.bam > 1a_reads.fq
+samtools view -@ 128 -h Map.result.sam.sort.bam 1A   > 1a.sam  
+samtools view -@ 128 -bS 1a.sam | samtools sort - -o 1a.bam  
+samtools bam2fq 1a.bam > 1a_reads.fq  
 
-NextDenovo/nextDenovo ./run.cfg.1A
+NextDenovo/nextDenovo ./run.cfg.1A  
 
-#local assembly
-#use the ONT ultra-long reads unmapped to 14 chromosomes 
-nextDenovo ./run.cfg1
-#merge different assemblys' results
+#local assembly  
+#use the ONT ultra-long reads unmapped to 14 chromosomes  
+nextDenovo ./run.cfg.unchr
 
-#Polishing
-minimap2 -ax map-hifi  --split-prefix k.ont.tmp --secondary=no  -t 128 006_27.patch.hifiasm1.fa Kronos.all.hifi.fq.gz  | samtools sort - -m 1500M --threads 1
-28 -o lgs.sort.bam
-samtools index -c  lgs.sort.bam
+#merge different assemblys' results  
 
-python /nextpolish2.py -g polish1.fa -l lgs.sort.bam.fofn -r hifi -p 128 -sp -o polish2.fa
-#assembly quality evaluation
-1. BUSCO
-busco -m genome -i kronos_l0.p_ctg.fa -o pctg_poa_out -l poales_odb10 -c 20 --offline
-busco -m prot -i longest_isoform.fasta  -l poales_odb10 -o busco -m  -c 20
+#Polishing  
+minimap2 -ax map-hifi  --split-prefix k.ont.tmp --secondary=no  -t 128 006_27.patch.hifiasm1.fa Kronos.all.hifi.fq.gz  | samtools sort - -m 1500M --threads 128 -o lgs.sort.bam  
+samtools index -c  lgs.sort.bam  
 
-2. N50 length
-fastaDeal.pl -attr len kronos_l0.p_ctg.fa | numberStat.pl
+python /nextpolish2.py -g 006_27.patch.hifiasm1.fa -l lgs.sort.bam.fofn -r hifi -p 128 -sp -o polish1.fa  \
+
+#assembly quality evaluation  
+1. BUSCO  
+busco -m genome -i kronos_l0.p_ctg.fa -o pctg_poa_out -l poales_odb10 -c 20 --offline  
+busco -m prot -i longest_isoform.fasta  -l poales_odb10 -o busco -m  -c 20  
+
+2. N50 length  
+fastaDeal.pl -attr len kronos_l0.p_ctg.fa | numberStat.pl  
 
 3. QV
-meryl k=22 count output cell10.bam.fq.gz.meryl  cell10.bam.fq.gz
-meryl union-sum output t2.hifi.meryl cell*.fq.gz.meryl
+meryl k=22 count output Kronos.all.hifi.fq.gz.meryl  Kronos.all.hifi.fq.gz 
+meryl union-sum output Kronos.hifi.meryl Kronos.all.hifi.fq.gz.meryl  
 
-4. LAI
-gt suffixerator -db genome.fa -indexname genome.fa -tis -suf -lcp -des -ssp -sds -dna
-gt ltrharvest -index genome.fa -minlenltr 100 -maxlenltr 7000 -mintsd 4 -maxtsd 6 -motif TGCA -motifmis 1 -similar 85 -vic 10 -seed 20 -seqids yes > genome.f
-a.harvest.scn
-LTR_FINDER_parallel -seq genome.fa -threads 128 -harvest_out -size 1000000 -time 300
-cat genome.fa.harvest.scn genome.fa.finder.combine.scn > genome.fa.rawLTR.scn
-LTR_retriever -genome genome.fa -inharvest genome.fa.rawLTR.scn -threads 128
+4. LAI 
+gt suffixerator -db genome.fa -indexname genome.fa -tis -suf -lcp -des -ssp -sds -dna  
+gt ltrharvest -index genome.fa -minlenltr 100 -maxlenltr 7000 -mintsd 4 -maxtsd 6 -motif TGCA -motifmis 1 -similar 85 -vic 10 -seed 20 -seqids yes > genome.fa.harvest.scn  
+LTR_FINDER_parallel -seq genome.fa -threads 128 -harvest_out -size 1000000 -time 300  
+cat genome.fa.harvest.scn genome.fa.finder.combine.scn > genome.fa.rawLTR.scn  
+LTR_retriever -genome genome.fa -inharvest genome.fa.rawLTR.scn -threads 128  
