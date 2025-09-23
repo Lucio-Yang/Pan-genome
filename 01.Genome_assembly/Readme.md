@@ -1,32 +1,42 @@
 ######
 #genome survey:Estimate genome size using Illumina short reads and HIFI reads
 
-jellyfish count -C -m 51 -s 40G -t 20 -g raw_generators -G 3 -o IG77365_K51_raw.jf
+jellyfish count -C -m 51 -s 40G -t 20 -g raw_generators -G 3 -o IG77365_K51_raw.jf、
+
 jellyfish histo -h 100000 -t 128 -v -o IG77365_K51_raw.histo IG77365_K51_raw.jf
+
 jellyfish stats -v -o IG77365_K51_raw.stat IG77365_K51_raw.jf
+
 genomescope2 -i IG77365_K51_raw.histo -k 51 -o t5.out 
 
 library("findGSE")
 findGSE(histo="./IG77365_K51_raw.histo",sizek=51,outdir="IG77365")
 
 ######
+
 #assembly using hifiasm
+
 hifiasm -o IG77365_l0 -t 128 -l 0 --primary IG77365.all.hifi.fq.gz  > asm.all.out 2> asm.all.err
 
 #filter organelle contig
+
 minimap2 -t 52 --secondary=no -cx asm20 organ.fa pctg.fa > IG77365_to_organ.paf 2> map.log
 
 paf_qur_stat.pl IG77365_to_organ.paf > IG77365_to_organ.paf.stat
 
 awk '$3>0.95 && $4<0.05' IG77365_to_organ.paf.stat > organ.stat
+
 awk '{print $2}' organ.stat | numberStat.pl > organ.stat.stat
 
 contig_select.pl -r organ.stat pctg.fa > IG77365.l0.nucleus.fa
+
 fastaDeal.pl -attr id:len IG77365.l0.nucleus.fa > IG77365.l0.nucleus.fa.len
+
 awk '{print $2}' IG77365.l0.nucleus.fa.len | numberStat.pl > IG77365.l0.nucleus.fa.len.stat
 
 ######
 #scaffolding
+
 HiC-Pro -c config-hicpro.txt -o Analysis -i HIC_read
 
 bwa index  pctg.fa 2> index.log
