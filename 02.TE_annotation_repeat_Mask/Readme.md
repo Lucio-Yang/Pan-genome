@@ -1,6 +1,7 @@
 ######
-#Annoate tandem repeats, use IG77365 as an example 
+#Annoate tandem repeats, use IG77365 as an example
 trf  ./IG77365.pctg.fa 2 7 7 80 10 50 500 -d -l 10 -h
+
 #Annoate TEs with EDTA for each accession;Annoate TEs, use IG77365 as an example
 EDTA_raw.pl --type ltr --genome IG77365.l0.nucleus.fa  --threads 128
 EDTA_raw.pl --type tir --genome IG77365.l0.nucleus.fa  --threads 128
@@ -13,7 +14,7 @@ seqkit grep -nr -i -p Unknown IG77365.l0.nucleus.fa.mod.EDTA.TElib.fa > un.fa
 seqkit grep -nr -v -i -p Unknown IG77365.l0.nucleus.fa.mod.EDTA.TElib.fa > k.fa
 terl_test.py -m DS3 -f un.fa
 TE_rename.pl un.fa TERL.IG77365.l0.nucleus.fa.mod.EDTA.TElib.fa > un.terl_ds3.fa
-cat k.fa un.terl_ds3.fa > all.terl_ds3.fa
+cat k.fa un.terl_ds3.fa > all.terl_ds3.fa 
 
 mkdir 03.EDTA.TElib.mask
 RepeatMasker -nolow -no_is -norna -engine ncbi -parallel 32 -gff -dir ./edtaTE_out -lib all.terl_ds3.fa IG77365.fa.intactTE.masked.fa
