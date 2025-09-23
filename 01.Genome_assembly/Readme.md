@@ -4,59 +4,50 @@
 jellyfish count -C -m 51 -s 40G -t 20 -g raw_generators -G 3 -o IG77365_K51_raw.jf  
 jellyfish histo -h 100000 -t 128 -v -o IG77365_K51_raw.histo IG77365_K51_raw.jf  
 jellyfish stats -v -o IG77365_K51_raw.stat IG77365_K51_raw.jf  
-genomescope2 -i IG77365_K51_raw.histo -k 51 -o t5.out 
+genomescope2 -i IG77365_K51_raw.histo -k 51 -o t5.out  
 
 library("findGSE")
 findGSE(histo="./IG77365_K51_raw.histo",sizek=51,outdir="IG77365")
 
-######
+######  
+#assembly using hifiasm  
+hifiasm -o IG77365_l0 -t 128 -l 0 --primary IG77365.all.hifi.fq.gz  > asm.all.out 2> asm.all.err  
 
-#assembly using hifiasm
+#filter organelle contig  
+minimap2 -t 52 --secondary=no -cx asm20 organ.fa pctg.fa > IG77365_to_organ.paf 2> map.log  
+paf_qur_stat.pl IG77365_to_organ.paf > IG77365_to_organ.paf.stat  
+awk '$3>0.95 && $4<0.05' IG77365_to_organ.paf.stat > organ.stat  
+awk '{print $2}' organ.stat | numberStat.pl > organ.stat.stat   
+contig_select.pl -r organ.stat pctg.fa > IG77365.l0.nucleus.fa  
+fastaDeal.pl -attr id:len IG77365.l0.nucleus.fa > IG77365.l0.nucleus.fa.len  
+awk '{print $2}' IG77365.l0.nucleus.fa.len | numberStat.pl > IG77365.l0.nucleus.fa.len.stat  
 
-hifiasm -o IG77365_l0 -t 128 -l 0 --primary IG77365.all.hifi.fq.gz  > asm.all.out 2> asm.all.err
+######  
+#scaffolding  
+#HIC-Pro
+HiC-Pro -c config-hicpro.txt -o Analysis -i HIC_read  
 
-#filter organelle contig
-
-minimap2 -t 52 --secondary=no -cx asm20 organ.fa pctg.fa > IG77365_to_organ.paf 2> map.log
-
-paf_qur_stat.pl IG77365_to_organ.paf > IG77365_to_organ.paf.stat
-
-awk '$3>0.95 && $4<0.05' IG77365_to_organ.paf.stat > organ.stat
-
-awk '{print $2}' organ.stat | numberStat.pl > organ.stat.stat
-
-contig_select.pl -r organ.stat pctg.fa > IG77365.l0.nucleus.fa
-
-fastaDeal.pl -attr id:len IG77365.l0.nucleus.fa > IG77365.l0.nucleus.fa.len
-
-awk '{print $2}' IG77365.l0.nucleus.fa.len | numberStat.pl > IG77365.l0.nucleus.fa.len.stat
-
-######
-#scaffolding
-
-HiC-Pro -c config-hicpro.txt -o Analysis -i HIC_read
-
-bwa index  pctg.fa 2> index.log
-bwa mem -SP5M -t 128 IG77365.l0.nucleus.fa  IG77365_good_1.fq.gz IG77365_good_2.fq.gz  | samtools view -bo IG77365.hic.bam -
-samtools faidx IG77365.l0.nucleus.fa
-yahs -e GATC --no-contig-ec  --no-scaffold-ec IG77365.l0.nucleus.fa IG77365.hic.bam 2> yahs.log
-juicer pre -a -o out yahs.out.bin yahs.out_scaffolds_final.agp IG77365.l0.nucleus.fa.fai > out_JBAT.log 2> pre.log
-java -jar -Xmx200G juicer_tools.1.9.9_jcuda.0.8.jar pre out.txt out.hic <(cat pre.log  | grep PRE_C_SIZE | awk '{print $2" "$3}')
+#YAHS
+bwa index  pctg.fa 2> index.log  
+bwa mem -SP5M -t 128 IG77365.l0.nucleus.fa  IG77365_good_1.fq.gz IG77365_good_2.fq.gz  | samtools view -bo IG77365.hic.bam -  
+samtools faidx IG77365.l0.nucleus.fa  
+yahs -e GATC --no-contig-ec  --no-scaffold-ec IG77365.l0.nucleus.fa IG77365.hic.bam 2> yahs.log  
+juicer pre -a -o out yahs.out.bin yahs.out_scaffolds_final.agp IG77365.l0.nucleus.fa.fai > out_JBAT.log 2> pre.log  
+java -jar -Xmx200G juicer_tools.1.9.9_jcuda.0.8.jar pre out.txt out.hic <(cat pre.log  | grep PRE_C_SIZE | awk '{print $2" "$3}')  
 
 juicebox manual correction
 
-juicer post -o out.IG77365 out.review.assembly out.liftover.agp IG77365.l0.nucleus.fa 2> post.log
+juicer post -o out.IG77365 out.review.assembly out.liftover.agp IG77365.l0.nucleus.fa 2> post.log  
 
-matrix2heatmap.py hic_100000_abs.bed hic_100000.matrix 10 
+matrix2heatmap.py hic_100000_abs.bed hic_100000.matrix 10  
 
-######
-#near T2T genome assembly of Kronos
-######
-#Nanopore ultral long reads basecalling and Quality control 
-dorado basecaller ./dna_r10.4.1_e8.2_400bps_sup@v5.0.0  ./pod5/  --recursive -x 'cuda:all' > ./bam/ont.bam
-samtools fastq -@ 128 ont.bam > ont.fq
-NanoFilt -q 10 --length 100000 ./ont.fq | gzip > ont.100.fq.gz
-NanoStat -t 128 --fastq ./ont.100.fq.gz    -n 100.report  --outdir report
+######  
+#near T2T genome assembly of Kronos  
+#Nanopore ultral long reads basecalling and Quality control  
+dorado basecaller ./dna_r10.4.1_e8.2_400bps_sup@v5.0.0  ./pod5/  --recursive -x 'cuda:all' > ./bam/ont.bam  
+samtools fastq -@ 128 ont.bam > ont.fq  
+NanoFilt -q 10 --length 100000 ./ont.fq | gzip > ont.100.fq.gz  
+NanoStat -t 128 --fastq ./ont.100.fq.gz    -n 100.report  --outdir report  
 
 #hifiasm HIFI data
 hifiasm -o kronos_l0 -t 96 -l 0 --primary Kronos.all.hifi.fq.gz > asm.all.out 2> asm.all.err
