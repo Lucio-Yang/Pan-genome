@@ -1,4 +1,7 @@
 ## WGS mapping<br>
+
+Clean whole-genome sequencing reads for 621 accessions generated in this study and 121 published data were mapped to the Kronos genome using BWA-MEM2 with default parameters. SNPs and small InDels (length < 50 bp) were genotyped using the LUSH-DNASeq-pipeline. Only bi-allelic variants were retained and SNPs were filtered using the following parameters: QD < 2.0, SOR > 3.0, FS > 60.0, MQ < 40.0, MQRankSum < –12.5, ReadPosRankSum < –8.0. Indels were filtered using the following parameters: QD < 2.0, SOR > 10.0, FS > 200.0, MQRankSum < –12.5, ReadPosRankSum < –8.0.
+
 **Mapping the WGS data of each accession to Kronos reference**
 ```
 ref=kronos.final.split.fa
