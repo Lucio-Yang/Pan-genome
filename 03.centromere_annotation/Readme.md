@@ -1,5 +1,5 @@
 ## Identification for centromere of each accession
-**ChIP-seq data of each accession were collected**
+**ChIP-seq data of 12 accession were collected**
 
 **Step1 Filtering adapter sequences**
 ```
