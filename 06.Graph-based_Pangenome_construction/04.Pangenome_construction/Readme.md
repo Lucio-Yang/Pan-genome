@@ -1,6 +1,6 @@
 ## Construction of tetraploid wheat graph genome (TWGG)
 
-vg version = 1.56.0
+vg version = 1.56.0  
 
 **VG indexing**
 
