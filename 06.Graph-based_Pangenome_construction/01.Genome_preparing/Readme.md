@@ -1,6 +1,6 @@
 ## Genome preparing
 **Spliting the chromsome of reference genome fasta and annotation file**
-
+Rename the chromosome of the reference genome and split them based on centromere positions to meet the input format requirements of variant identification and population genetic analysis software.
 ```
 #!/usr/bin/bash
 
