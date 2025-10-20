@@ -4,4 +4,4 @@
 ### 2. Population structure analysis
 ### 3. Selective sweeping analysis
 ### 4. Evolution network and introgression analysis
-### 5. Heritability estimating and GWAS for 32 traits
+### 5. Heritability estimating and GWAS
