@@ -11,7 +11,7 @@ do
 	done
 done
 ```
-** Converting gVCF to VCF format **
+**Converting gVCF to VCF format**
 ```
 cat sample.list | while read f; do python3 convert_gvcf2vcf.py ${f}.gvcf > ${f}.vcf; sed -i 's/1:0/1\/1:0/g' ${f}.vcf; python3 filter_length.py ${f}.vcf > ${f}_longerthan50bp.vcf; bgzip -@ 50 ${f}_longerthan50bp.vcf; tabix -C -p vcf ${f}_longerthan50bp.vcf.gz; done
 ```
