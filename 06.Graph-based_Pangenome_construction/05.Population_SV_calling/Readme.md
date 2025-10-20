@@ -1,5 +1,7 @@
 ## Population sample SV calling
 
+To identify SVs in the 742 accessions, Illumina short reads were mapped to the tetraploid wheat graph pangenome using the ‘vg giraffe’ pipeline with default parameters. SVs were genotyped using Paragraph with default parameters.
+
 **Short reads mapping**
 ```
 #!/usr/bin/bash
