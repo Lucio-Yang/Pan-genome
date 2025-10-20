@@ -1,5 +1,8 @@
 ## Alignments by [AnchorWave](https://github.com/baoxingsong/AnchorWave)
- ```
+
+Using the Kronos genome as reference, the other 11 genomes were aligned using AnchorWave with the ‘proali’ command, ‘-R 1 -Q 1’ parameters.
+
+```
  #!/bin/bash
  
  chrom_number=14
