@@ -17,7 +17,7 @@ cat sample.list | while read f; do python3 convert_gvcf2vcf.py ${f}.gvcf > ${f}.
 ```
 
 ## Variants merge
-** Merging VCF files using BCFtools **
+**Merging VCF files using BCFtools**
 ```
 #!/usr/bin/bash
 
@@ -30,7 +30,7 @@ do
 	tabix -C -p vcf chr${i}_longerthan50bp.merged.split.changechr.vcf.gz
 done
 ```
-** Spliting chromosomes **
+**Spliting chromosomes**
 ```
 ##### Bed file #####
 1	1
@@ -82,7 +82,7 @@ do
 	perl PART_run.pl -i chr${i}.vcf -o panpop_chr${i}_output -r Kronos_split.chr${i}.fasta -t 50 --tmpdir ./tmp
 done
 ```
-** Sorting chromosomes ID according to ASCII**
+**Sorting chromosomes ID according to ASCII**
 ```
 #!/usr/bin/bash
 
