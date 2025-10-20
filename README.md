@@ -8,7 +8,3 @@
 ### 5. Pan-syntenic gene analysis
 ### 6. Graph-based pangenome construction
 ### 7. Population quantative genetic analysis
-
-
-## Figures/Plots
-Figures and plots used in the publication
