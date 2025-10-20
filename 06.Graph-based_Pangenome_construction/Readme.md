@@ -1,6 +1,6 @@
 ##  Pangenome construction and SV genotyping
 
-<img width="4767" height="3052" alt="TWGG_pipline" src="https://github.com/user-attachments/assets/48fba89e-7a12-4a7d-ac36-7abd2e644798" />
+<img width="4679" height="2630" alt="TWGG_pipline" src="https://github.com/user-attachments/assets/b04c52c9-67e7-49da-88ba-7ff5b5d07257" />
 
 ### Step1 Preparing for genome files
 ### Step2 Genome alignment by AnchorWave
