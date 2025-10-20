@@ -1,5 +1,5 @@
 
-A pangenome of tetraploid wheat reveals the genetic architecture underlying domestication and genomic diversity for breeding
+# A pangenome of tetraploid wheat reveals the genetic architecture underlying domestication and genomic diversity for breeding
 ## Table of contents:
 ### 1. Genome assembly methods
 ### 2. Transposable element annotation
