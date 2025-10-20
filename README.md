@@ -1,11 +1,13 @@
-# Pan-genome
-Graph-based pangenome construction for tetraploid wheat
+
+A pangenome of tetraploid wheat reveals the genetic architecture underlying domestication and genomic diversity for breeding
 ## Table of contents:
 ### 1. Genome assembly methods
-### 2. Gene prediction and annotation
-### 3. Pan-genome annotation
-### 4. Graph-based Pangenome
-### 5. Genetic_analysis
+### 2. Transposable element annotation
+### 3. Centromere region annotation
+### 4. Genome annotation
+### 5. Pan-syntenic gene analysis
+### 6. Graph-based pangenome construction
+### 7. Population quantative genetic analysis
 
 
 ## Figures/Plots
