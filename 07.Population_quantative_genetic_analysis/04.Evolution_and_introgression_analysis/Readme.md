@@ -1,8 +1,9 @@
 ### Population analysis
 
-**Network analysis**
+####Network analysis
 
-Network-based approach to explore the species history and community structure. 
+The network-based approach used for [bread wheat](https://www.nature.com/articles/s41588-019-0393-z) was used to reconstruct the species history and community structure of tetraploid wheat.Based on a high-quality VCF file, we divided the genome into 1,000 parts and performed repeated random-haplotype sampling at heterozygous sites, randomly sampling 2,000 SNP sites each time to infer 1,000 maximum-likelihood tree topologies with the GTRGAMMA model and JC69 distances in RAxML (asc-corr = felsenstein). While these repeated random haplotype sampling procedures including heterozygous sites (RRHS) trees were also analysed in the form of conventional consensus topologies and Densitree visualizations to infer taxonomic clades, we used the Kruskal algorithm130 implemented in Python to analyse the evolutionary distances between each pair of accessions using 1,000 minimum spanning trees (MST).
+
 ```text
 ##### random SNP sites selection
 python evolution_network_random_SNP.py
@@ -25,7 +26,7 @@ python MST-Kruskal.py
 
 #### ABBA-BABA analysis
 
-Inferring the gene-flows among the tetraploid wheats.
+The D statistic was used to reflect introgression proportions at the genome-wide level, and the fd statistic was used to estimate introgression proportions within a specific size window. To explore the introgression regions among the tetraploid wheat accessions, we calculated D and fd values across the whole genome using [Python code](https://github.com/simonhmartin/genomics_general), with the window size = 100 and step size = 50 SNPs. The minimum number of loci in each window was set to 3. The fd statistic ranges from 0 to 1, and the D statistic ranges from –1 to 1. When windows with D < 0, or D > 0, but fd > 1, the fd statistic was biologically meaningless or noisy; therefore, fd was set to zero.
 
 ```text
 ##### pop_list.sample.txt #####
