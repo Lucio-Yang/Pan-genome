@@ -1,5 +1,5 @@
 ## Heritability estimating
-We estimated heritability for 32 traits based on SNP, InDel and SV respectively. The following example is merely exemplified by SNP variants.
+We estimated heritability for 32 traits based on SNP, InDel and SV respectively according to [previous study](https://www.nature.com/articles/s41586-022-04808-9). The following example is merely exemplified by SNP variants.
 ```
 ldak --bfile snp --window-prune 0.98 --window-kb 100 --cut-weights snp_weights
 awk < snp_weights/thin.in '{print $1, 1}' > snp_weights.thin
