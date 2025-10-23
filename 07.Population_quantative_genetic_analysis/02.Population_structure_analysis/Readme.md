@@ -1,4 +1,6 @@
 ## Population structure analyis<br>
+The SNP and small InDel (length < 50 bp) were mainly used to perform population structure analysis unsing PLINK, GCTA, RAXML, ADMIXTURE, PopLDdecay software.
+
 **Preparing for input files**
 ```
 #!/bin/bash
