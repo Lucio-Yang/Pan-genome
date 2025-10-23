@@ -1,5 +1,6 @@
 ## Identification for centromere of each accession
-**ChIP-seq data of 12 accession were collected**
+ChIP-seq data of 12 accessions were collected. Adapters and low-quality reads in ChIP-seq data for 12 accessions were removed using Trimmomatic. Quality-controlled reads were aligned to each genome using Bowtie2 with the parameters and were further filtered by SAMtools. MACS3 was used to call CENH3 ChIP-seq peaks using input as a control with the settings: -f BAMPE. Adjacent significant CENH3-enriched regions within 1,000 kb were merged, and the most significant regions were determined as potential centromere regions.
+
 
 **Step1 Filtering adapter sequences**
 ```
@@ -38,7 +39,7 @@ macs3 callpeak -f BAMPE -c ${genome}_input.filtered.bam -t ${genome}.CENH3.filte
 done
 ```
 
-**Step4 Merging and identification potential centromere region**<br>
+**Step4 Merging and identification potential centromere region**
 We merged all peaks of each accession based on the 1 Mb distance. The genome region with the highest number of peaks was considered a potential centromere region.
 
 ```
@@ -53,7 +54,7 @@ done
 
 ```
 
-**Step5 Extracting sequence of each centromere region**<br>
+**Step5 Extracting sequence of each centromere region**
 The file 'all_centromere_region.txt' is obtained by merging the bed files of all genomic centromeres.
 ```
 sed -n '2,$p' all_centromere_region.txt | while read f
