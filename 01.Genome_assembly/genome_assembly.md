@@ -1,6 +1,9 @@
 ## genome survey:Estimate genome size using Illumina short reads and HIFI reads
 
-`jellyfish count -C -m 51 -s 40G -t 20 -g raw_generators -G 3 -o IG77365_K51_raw.jf`
+`jellyfish count -C -m 51 -s 40G -t 20 -g raw_generators -G 3 -o IG77365_K51_raw.jf `
+
+`jellyfish histo -h 100000 -t 128 -v -o IG77365_K51_raw.histo IG77365_K51_raw.jf`
+
 `jellyfish histo -h 100000 -t 128 -v -o IG77365_K51_raw.histo IG77365_K51_raw.jf`
 `jellyfish stats -v -o IG77365_K51_raw.stat IG77365_K51_raw.jf  
 genomescope2 -i IG77365_K51_raw.histo -k 51 -o t5.out`
@@ -10,16 +13,15 @@ genomescope2 -i IG77365_K51_raw.histo -k 51 -o t5.out`
 
 
 
-######  
-
 ## assembly using hifiasm
 
 
-  
+
 `hifiasm -o IG77365_l0 -t 128 -l 0 --primary IG77365.all.hifi.fq.gz  > asm.all.out 2> asm.all.err`  
 
-`#filter organelle contig  
-minimap2 -t 52 --secondary=no -cx asm20 organ.fa pctg.fa > IG77365_to_organ.paf 2> map.log  
+### filter organelle contig  
+
+`minimap2 -t 52 --secondary=no -cx asm20 organ.fa pctg.fa > IG77365_to_organ.paf 2> map.log  
 paf_qur_stat.pl IG77365_to_organ.paf > IG77365_to_organ.paf.stat  
 awk '$3>0.95 && $4<0.05' IG77365_to_organ.paf.stat > organ.stat  
 awk '{print $2}' organ.stat | numberStat.pl > organ.stat.stat   
@@ -117,24 +119,24 @@ samtools index -c  lgs.sort.bam`
 
 ## assembly quality evaluation  
 
- ### 1.BUSCO  
+### 1.BUSCO  
 
-   `busco -m genome -i kronos_l0.p_ctg.fa -o pctg_poa_out -l poales_odb10 -c 20 --offline  
-   busco -m prot -i longest_isoform.fasta  -l poales_odb10 -o busco -m  -c 20`  
+`busco -m genome -i kronos_l0.p_ctg.fa -o pctg_poa_out -l poales_odb10 -c 20 --offline  
+busco -m prot -i longest_isoform.fasta  -l poales_odb10 -o busco -m  -c 20`  
 
- ### 2.N50 length  
+### 2.N50 length  
 
-   `fastaDeal.pl -attr len kronos_l0.p_ctg.fa | numberStat.pl`  
+`fastaDeal.pl -attr len kronos_l0.p_ctg.fa | numberStat.pl`  
 
- ### 3.QV
+### 3.QV
 
-   `meryl k=22 count output Kronos.all.hifi.fq.gz.meryl  Kronos.all.hifi.fq.gz` 
-   `meryl union-sum output Kronos.hifi.meryl Kronos.all.hifi.fq.gz.meryl`  
+`meryl k=22 count output Kronos.all.hifi.fq.gz.meryl  Kronos.all.hifi.fq.gz` 
+`meryl union-sum output Kronos.hifi.meryl Kronos.all.hifi.fq.gz.meryl`  
 
- ### 4.LAI 
+### 4.LAI 
 
-   `gt suffixerator -db genome.fa -indexname genome.fa -tis -suf -lcp -des -ssp -sds -dna  
-   gt ltrharvest -index genome.fa -minlenltr 100 -maxlenltr 7000 -mintsd 4 -maxtsd 6 -motif TGCA -motifmis 1 -similar 85 -vic 10 -seed 20 -seqids yes > genome.fa.harvest.scn  
-   LTR_FINDER_parallel -seq genome.fa -threads 128 -harvest_out -size 1000000 -time 300  
-   cat genome.fa.harvest.scn genome.fa.finder.combine.scn > genome.fa.rawLTR.scn  
-   LTR_retriever -genome genome.fa -inharvest genome.fa.rawLTR.scn -threads 128`  
+`gt suffixerator -db genome.fa -indexname genome.fa -tis -suf -lcp -des -ssp -sds -dna  
+gt ltrharvest -index genome.fa -minlenltr 100 -maxlenltr 7000 -mintsd 4 -maxtsd 6 -motif TGCA -motifmis 1 -similar 85 -vic 10 -seed 20 -seqids yes > genome.fa.harvest.scn  
+LTR_FINDER_parallel -seq genome.fa -threads 128 -harvest_out -size 1000000 -time 300  
+cat genome.fa.harvest.scn genome.fa.finder.combine.scn > genome.fa.rawLTR.scn  
+LTR_retriever -genome genome.fa -inharvest genome.fa.rawLTR.scn -threads 128`  
