@@ -1,3 +1,18 @@
+## genome survey:Estimate genome size using Illumina short reads and HIFI reads
+
+`jellyfish count -C -m 51 -s 40G -t 20 -g raw_generators -G 3 -o IG77365_K51_raw.jf`
+
+`jellyfish histo -h 100000 -t 128 -v -o IG77365_K51_raw.histo IG77365_K51_raw.jf`
+`jellyfish stats -v -o IG77365_K51_raw.stat IG77365_K51_raw.jf  
+genomescope2 -i IG77365_K51_raw.histo -k 51 -o t5.out`
+
+`library("findGSE")`
+`findGSE(histo="./IG77365_K51_raw.histo",sizek=51,outdir="IG77365")`
+
+
+
+
+
 ######
 #genome survey:Estimate genome size using Illumina short reads and HIFI reads
 
